@@ -2,7 +2,7 @@ from threading import Thread, Lock
 from concurrent.futures import Future
 from queue import Queue  # thread-safe queue, not asyncio.Queue
 from utils import download_from_url, get_video_id
-from caching import get_existing_transcript, save_transcript, check_exist_and_has_content, create_entry,update_transcript
+from caching import get_existing_transcript, save_transcript, check_exist_and_has_content, create_entry,update_transcript,get_all_incomplete_entries
 from pipeline import TranscriptionPipeline
 from sqlmodel import Session
 import os
@@ -79,7 +79,7 @@ def transcription(session: Session):
             with futures_lock:
                 still_pending = []
                 for fid, future in currently_processing_futures:
-                    _, has_content = check_exist_and_has_content(session, fid)
+                    exist, has_content = check_exist_and_has_content(session, fid)
                     if has_content:
                         future.set_result(get_existing_transcript(session, fid))
                     else:
@@ -120,6 +120,56 @@ def transcription(session: Session):
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def recover_orphaned_entries(session: Session):
+    """
+    Called once at startup. Finds DB entries that exist but have no content
+    (server was killed mid-transcription) and re-queues them for transcription.
+    """
+    
+    orphaned = get_all_incomplete_entries(session)
+    for video_id in orphaned:
+        file_name = f"{temp_folder}/{video_id}.wav"
+        if os.path.exists(file_name):
+            # Audio file survived the crash — re-queue directly
+            print(f"[recovery] Re-queuing orphaned transcription: {video_id}")
+            transcription_queue.put((video_id, file_name))
+        else:
+            # Audio file was lost — we need to re-download
+            # We can't recover the original URL from video_id alone,
+            # so reconstruct the YouTube URL from the video_id
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            file_name_no_extension = f"{temp_folder}/{video_id}"
+            print(f"[recovery] Re-downloading orphaned entry: {video_id}")
+            try:
+                download_from_url(file_name_no_extension, url)
+                transcription_queue.put((video_id, file_name))
+            except Exception as e:
+                print(f"[recovery] Failed to re-download {video_id}: {e}")
+
+
+def start_workers(session: Session):
+    """Initialise and start both background worker threads."""
+    recover_orphaned_entries(session)  # <-- heal state before workers start
+    
+    transcription_thread = Thread(
+        target=transcription,
+        args=(session,),
+        daemon=True,
+        name="transcription-worker",
+    )
+    download_thread = Thread(
+        target=download_from_youtube,
+        args=(session,),
+        daemon=True,
+        name="download-worker",
+    )
+    transcription_thread.start()
+    download_thread.start()
+    return download_thread, transcription_thread
+
+
 
 def start_workers(session: Session):
     """Initialise and start both background worker threads."""

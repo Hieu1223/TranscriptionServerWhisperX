@@ -67,3 +67,10 @@ def update_transcript(session: Session, id: str, data: dict):
     record.data = json.dumps(data)
     session.add(record)
     session.commit()
+
+def get_all_incomplete_entries(session: Session) -> list[str]:
+    """Return video_ids that exist in the DB but have no transcript content."""
+    results = session.exec(
+        select(Transcript.id).where(Transcript.data == "")
+    ).all()
+    return results
