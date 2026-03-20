@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated,AsyncIterable
 from fastapi import FastAPI,Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from transcription import transcribe_from_youtube
-from schema import YoutubeTranscriptionResponse,YouTubeTranscriptionRequest
+from schema import YoutubeTranscriptionResponse,TranscriptResponseV2
 from caching import create_db_and_tables,SessionDep
 from fastapi.staticfiles import StaticFiles
 app = FastAPI()
@@ -32,3 +32,7 @@ def get_transcribe_from_youtube(url: str,session: SessionDep) -> YoutubeTranscri
 @app.get("/ping")
 async def ping():
     return {"status": "ok"}
+
+@app.get("/transcribe")
+async def get_transcribe(url: str,session: SessionDep) -> AsyncIterable[TranscriptResponseV2]:
+    

@@ -8,8 +8,7 @@ from uuid import UUID,uuid4
 
 class Transcript(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
-    id:  UUID | None = Field(default=None, primary_key=True)
-    url: str = Field(index=True, unique=True)
+    id: str = Field(primary_key=True)
     date_created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     data: str = Field(default="")
 
@@ -31,20 +30,35 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-def get_existing_transcript(session: Session, url: str) -> dict:
+def check_exist_and_has_content(session:Session,id:str):
+    statement = select(Transcript).where(Transcript.id == id)
+    transcript = session.exec(statement).first()
+
+    if transcript is None:
+        return False,False
+
+    return True , transcript.data == ""
+
+def create_entry(session:Session ,id:str):
+    transcript = Transcript(id=id)
+    session.add(transcript)
+    session.commit()
+
+
+def get_existing_transcript(session: Session, id: str) -> dict:
     """
     Queries the database for a Transcript with a matching URL.
     Returns the Transcript object if found, otherwise returns None.
     """
-    statement = select(Transcript).where(Transcript.url == url)
+    statement = select(Transcript).where(Transcript.id)
     results = session.exec(statement)
     res =  results.first()
     if res:
         return res.id, json.loads(res.data)
     return None,None
 
-def save_transcript(session: Session,id : UUID, url: str, data: dict):
-    new_record = Transcript(id = id,url=url, data=json.dumps(data))
+def save_transcript(session: Session,id :str, data: dict):
+    new_record = Transcript(id = id, data=json.dumps(data))
     session.add(new_record)
     session.commit()
     
