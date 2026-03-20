@@ -12,7 +12,6 @@ class YouTubeTranscriptionRequest(BaseModel):
 
 class YoutubeTranscriptionResponse(BaseModel):
     transcript: list[list[TranscriptionToken]]
-    audio_id: UUID
     
 class TranscriptResponseV2(BaseModel):
     transcript: list[list[TranscriptionToken]] | None

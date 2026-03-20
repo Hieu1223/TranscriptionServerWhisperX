@@ -28,7 +28,8 @@ class TranscriptionPipeline:
         self.model = whisperx.load_model(
             model_size, 
             device, 
-            compute_type=self.compute_type
+            compute_type=self.compute_type,
+            language='ja'
         )
         
         self.model_a = None

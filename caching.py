@@ -12,11 +12,9 @@ class Transcript(SQLModel, table=True):
     date_created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     data: str = Field(default="")
 
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+DATABASE_URL = "postgresql+psycopg2://postgres:1@localhost:5432/transcript_server"
 
-connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, connect_args=connect_args)
+engine = create_engine(DATABASE_URL)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -37,7 +35,7 @@ def check_exist_and_has_content(session:Session,id:str):
     if transcript is None:
         return False,False
 
-    return True , transcript.data == ""
+    return True , transcript.data != ""
 
 def create_entry(session:Session ,id:str):
     transcript = Transcript(id=id)
@@ -50,7 +48,7 @@ def get_existing_transcript(session: Session, id: str) -> dict:
     Queries the database for a Transcript with a matching URL.
     Returns the Transcript object if found, otherwise returns None.
     """
-    statement = select(Transcript).where(Transcript.id)
+    statement = select(Transcript).where(Transcript.id == id)
     results = session.exec(statement)
     res =  results.first()
     if res:
@@ -62,3 +60,10 @@ def save_transcript(session: Session,id :str, data: dict):
     session.add(new_record)
     session.commit()
     
+def update_transcript(session: Session, id: str, data: dict):
+    record = session.get(Transcript, id)
+    if record is None:
+        raise ValueError(f"Transcript '{id}' not found")
+    record.data = json.dumps(data)
+    session.add(record)
+    session.commit()

@@ -15,16 +15,14 @@ def transcribe_from_youtube(url: str,session:SessionDep) -> dict:
     if existing:
         return {
             'transcript' : existing,
-            'audio_id' : id
         }
     id = uuid4()
     download_from_url(f"{temp_folder}/{id}", url)
-    result = pipeline.transcribe(f'temp/{id}.wav')
+    result = pipeline.transcribe(f'temp/{id}')
     save_transcript(session,id,url,result)
     gc.collect()
     torch.cuda.empty_cache()
     return {
         'transcript': result,
-        'audio_id' : id
     }
 

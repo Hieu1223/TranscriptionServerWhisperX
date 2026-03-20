@@ -1,0 +1,109 @@
+{"type": "model_attributes_type", "loc": ("response",), "msg": "Input should be a valid dictionary or object to extract fields from", 
+"input": [
+        [
+            {"token": "3", "start": np.float64(3.928), "end": np.float64(4.228)
+            },
+            {"token": "番", "start": np.float64(4.228), "end": np.float64(5.39)
+            },
+            {"token": "。", "start": None, "end": None
+            },
+            {"token": "友", "start": np.float64(5.39), "end": np.float64(5.69)
+            },
+            {"token": "達", "start": np.float64(5.69), "end": np.float64(5.99)
+            },
+            {"token": 
+"と", "start": np.float64(5.99), "end": np.float64(6.311)
+            },
+            {"token": "空", "start": np.float64(6.311), "end": np.float64(6.531)
+            },
+            {"token": "港", "start": np.float64(6.531), "end": np.float64(6.751)
+            },
+            {"token": "で", "start": np.float64(6.751), "end": np.float64(7.072)
+            },
+            {"token": "別", "start": np.float64(7.072), "end": np.float64(7.192)
+            },
+            {"token": "れ", "start": np.float64(7.192), "end": np.float64(7.352)
+            },
+            {"token": "ま", "start": np.float64(7.352), "end": np.float64(7.512)
+            },
+            {"token": "す", "start": np.float64(7.512), "end": np.float64(8.433)
+            },
+            {"token": "。", "start": None, "end": None
+            },
+            {"token": "何", "start": np.float64(8.433), "end": np.float64(8.753)
+            },
+            {"token": "と", "start": np.float64(8.753), "end": np.float64(8.914)
+            },
+            {"token": "言", "start": np.float64(8.914), "end": np.float64(9.034)
+            },
+            {"token": "い", "start": np.float64(9.034), "end": np.float64(9.114)
+            },
+            {"token": "ま", "start": np.float64(9.114), "end": np.float64(9.274)
+            },
+            {"token": "す", "start": np.float64(9.274), "end": np.float64(9.414)
+            },
+            {"token": "か", "start": np.float64(9.414), "end": np.float64(11.697)
+            },
+            {"token": "?", "start": None, "end": None
+            },
+            {"token": "1", "start": np.float64(11.697), "end": np.float64(13.018)
+            },
+            {"token": ".", "start": None, "end": None
+            },
+            {"token": "こ", "start": np.float64(13.018), "end": np.float64(13.138)
+            },
+            {"token": "れ", "start": np.float64(13.138), "end": np.float64(13.298)
+            },
+            {"token": "か", "start": np.float64(13.298), "end": np.float64(13.419)
+            },
+            {"token": "ら", "start": np.float64(13.419), "end": np.float64(13.919)
+            },
+            {"token": "別", "start": np.float64(13.919), "end": np.float64(14.059)
+            },
+            {"token": "れ", "start": np.float64(14.059), "end": np.float64(14.179)
+            },
+            {"token": "ま", "start": np.float64(14.179), "end": np.float64(14.34)
+            },
+            {"token": "す", "start": np.float64(14.34), "end": np.float64(14.46)
+            },
+            {"token": "ね", "start": np.float64(14.46), "end": np.float64(16.802)
+            },
+            {"token": "。", "start": None, "end": None
+            },
+            {"token": "2", "start": np.float64(16.802), "end": np.float64(17.643)
+            },
+            {"token": ".", "start": None, "end": None
+            },
+            {"token": "お", "start": np.float64(17.643), "end": np.float64(17.783)
+            },
+            {"token": "大", "start": np.float64(17.783), "end": np.float64(18.044)
+            },
+            {"token": "事", "start": np.float64(18.044), "end": np.float64(18.184)
+            },
+            {"token": "に", "start": np.float64(18.184), "end": np.float64(20.526)
+            },
+            {"token": "。", "start": None, "end": None
+            },
+            {"token": "3", "start": np.float64(20.526), "end": np.float64(21.488)
+            },
+            {"token": ".", "start": None, "end": None
+            },
+            {"token": "じ", "start": np.float64(21.488), "end": np.float64(21.528)
+            },
+            {"token": "ゃ", "start": np.float64(21.528), "end": np.float64(21.548)
+            },
+            {"token": "あ", "start": np.float64(21.548), "end": np.float64(22.068)
+            },
+            {"token": "お", "start": np.float64(22.068), "end": np.float64(22.228)
+            },
+            {"token": "元", "start": np.float64(22.228), "end": np.float64(22.469)
+            },
+            {"token": "気", "start": np.float64(22.469), "end": np.float64(22.589)
+            },
+            {"token": "で", "start": np.float64(22.589), "end": np.float64(22.609)
+            },
+            {"token": "。", "start": None, "end": None
+            }
+        ]
+    ]
+}
