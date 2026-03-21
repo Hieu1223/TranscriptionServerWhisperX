@@ -50,6 +50,7 @@ class TranscriptionPipeline:
     def load_audio(file_path: str):
         converted_path = TranscriptionPipeline._preprocess_audio(file_path)
         audio = whisperx.load_audio(converted_path)
+        os.remove(file_path)
         return audio, converted_path
 
     def transcribe_with_tensor(self, audio, batch_size: int = 16) -> list[list[dict]]:  # ✅ increased batch_size
