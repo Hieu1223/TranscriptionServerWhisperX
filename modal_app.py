@@ -50,6 +50,5 @@ class Transcriber:
         try:
             result = self.pipeline.transcribe(tmp_path)  # ✅ uses full pipeline including ffmpeg preprocess
         finally:
-            os.remove(tmp_path)
-
+            pass
         return result
