@@ -1,6 +1,6 @@
 from threading import Thread, Lock
 from concurrent.futures import Future
-from queue import Queue  # thread-safe queue, not asyncio.Queue
+from queue import Queue  
 from utils import download_from_url, get_video_id
 from caching import get_existing_transcript, save_transcript, check_exist_and_has_content, create_entry,update_transcript,get_all_incomplete_entries
 import modal_transcribe

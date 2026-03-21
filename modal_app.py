@@ -39,5 +39,17 @@ class Transcriber:
         # CTranslate2 check
         print(f"CT2 CUDA types: {ctranslate2.get_supported_compute_types('cuda')}")
     @modal.method()
-    def transcribe(self,audio):
-        return self.pipeline.transcribe_with_tensor(audio)
+    def transcribe(self, audio_bytes: bytes) -> list:
+        import tempfile
+        import os
+
+        # Write bytes to temp file, let pipeline handle the rest
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
+            f.write(audio_bytes)
+            tmp_path = f.name
+        try:
+            result = self.pipeline.transcribe(tmp_path)  # ✅ uses full pipeline including ffmpeg preprocess
+        finally:
+            os.remove(tmp_path)
+
+        return result
