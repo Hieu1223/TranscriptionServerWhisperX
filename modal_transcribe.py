@@ -1,6 +1,4 @@
 import modal
-import torchaudio
-import numpy as np
 from pipeline import TranscriptionPipeline
 import os
 # Look up deployed class
