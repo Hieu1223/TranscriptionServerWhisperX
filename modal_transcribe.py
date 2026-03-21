@@ -9,7 +9,7 @@ transcriber = Transcriber()
 
 
 def transcribe(file_path):
-    audio,converted_path = TranscriptionPipeline.load_audio("a.wav")
+    audio,converted_path = TranscriptionPipeline.load_audio(file_path)
     # Call remotely — blocks until result
     result = transcriber.transcribe.remote(audio)
     os.remove(converted_path)

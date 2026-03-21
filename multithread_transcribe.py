@@ -3,7 +3,7 @@ from concurrent.futures import Future
 from queue import Queue  # thread-safe queue, not asyncio.Queue
 from utils import download_from_url, get_video_id
 from caching import get_existing_transcript, save_transcript, check_exist_and_has_content, create_entry,update_transcript,get_all_incomplete_entries
-from pipeline import TranscriptionPipeline
+import modal_transcribe
 from sqlmodel import Session
 import os
 import gc
@@ -62,7 +62,6 @@ def download_from_youtube(session: Session):
 
 
 def transcription(session: Session):
-    pipeline = TranscriptionPipeline()
 
     while True:
         video_id, file_name = transcription_queue.get()
@@ -83,7 +82,7 @@ def transcription(session: Session):
             print(currently_processing_futures)
 
             # ── Phase 2: transcribe ──
-            result = pipeline.transcribe(file_name)
+            result = modal_transcribe.transcribe(file_name)
             update_transcript(session, video_id, result)
 
             # ── Phase 3: resolve waiters ──
@@ -108,27 +107,13 @@ def transcription(session: Session):
                 currently_processing_futures[:] = remaining
 
         finally:
-            # ── Memory / resource cleanup ──
-
-            # 1. Delete the wav file — always runs, even if transcription crashed
             try:
                 os.remove(file_name)
                 print(f"[cleanup] Deleted {file_name}")
             except FileNotFoundError:
                 pass
 
-            # 2. Expire SQLModel session cache so the next job sees fresh DB state
-            #    Without this, session holds stale ORM objects in memory indefinitely
             session.expire_all()
-
-            # 3. Release the pipeline's GPU/CPU memory between jobs if supported
-            if hasattr(pipeline, 'release') and callable(pipeline.release):
-                pipeline.release()
-
-            # 4. Run Python's garbage collector to free any large objects immediately
-            #    (wav data, model outputs, etc.) rather than waiting for the next GC cycle
-            gc.collect()
-
             print(f"[cleanup] Done for {video_id}")
 # ---------------------------------------------------------------------------
 # Public API
