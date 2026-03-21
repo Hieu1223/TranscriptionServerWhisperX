@@ -1,3 +1,8 @@
+
+from dotenv import load_dotenv
+load_dotenv()
+
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -8,7 +13,6 @@ from schema import YoutubeTranscriptionResponse
 from caching import create_db_and_tables, SessionDep,engine
 from multithread_transcribe import *
 import asyncio
-from dotenv import load_dotenv
 # ---------------------------------------------------------------------------
 # Lifespan: replaces the deprecated @app.on_event("startup")
 # ---------------------------------------------------------------------------
@@ -19,7 +23,6 @@ async def lifespan(app: FastAPI):
     Runs once on startup (before the `yield`) and once on shutdown (after).
     Creates DB tables and starts the background download/transcription workers.
     """
-    load_dotenv()
     create_db_and_tables()
     with Session(engine) as session:
         start_workers(session)   # spins up daemon threads; see pipeline_worker.py
