@@ -5,14 +5,15 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 import json
 from schema import YoutubeTranscriptionResponse
 from uuid import UUID,uuid4
-
+import os
 class Transcript(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: str = Field(primary_key=True)
     date_created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     data: str = Field(default="")
 
-DATABASE_URL = "postgresql+psycopg2://postgres:1@localhost:5432/transcript_server"
+
+DATABASE_URL = os.environ["DATABASE_URL"]  # ✅ from env var
 
 engine = create_engine(DATABASE_URL)
 
