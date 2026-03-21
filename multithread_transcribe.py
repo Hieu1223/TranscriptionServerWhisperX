@@ -6,6 +6,7 @@ from caching import get_existing_transcript, save_transcript, check_exist_and_ha
 from pipeline import TranscriptionPipeline
 from sqlmodel import Session
 import os
+import gc
 
 temp_folder = "temp"
 
@@ -30,12 +31,13 @@ def download_from_youtube(session: Session):
     """
     while True:
         url, future = download_queue.get()  # blocks until work arrives
+        print(f"Processing {url}")
         try:
             video_id = get_video_id(url)
             file_name_no_extension = f"{temp_folder}/{video_id}"
             file_name = f"{temp_folder}/{video_id}.wav"
             exist, has_content = check_exist_and_has_content(session, video_id)
-
+            print(f"Processing {url} exists {exist} has content {has_content}")
             if has_content:
                 # Transcript already ready — resolve immediately, no transcription needed.
                 id, res = get_existing_transcript(session, video_id)
@@ -47,54 +49,44 @@ def download_from_youtube(session: Session):
                 with futures_lock:
                     currently_processing_futures.append((video_id, future))
                 transcription_queue.put((video_id, file_name))
-
+                print("push to transcipt thread")
             else:
                 # Entry exists but content is still being transcribed by another request.
                 # Register future so the transcription worker resolves it when done.
                 with futures_lock:
                     currently_processing_futures.append((video_id, future))
-
+                    print("Push to currently processing")
         except Exception as exc:
             # Propagate exceptions to the caller instead of silently dropping them.
             future.set_exception(exc)
 
 
 def transcription(session: Session):
-    """
-    Blocking transcription worker.
-    - Before processing the next item, scans registered futures and resolves
-      any whose content has already been saved (e.g. by a concurrent request).
-    - Transcribes the audio file, persists the result, then resolves every
-      future waiting on that specific video_id.
-    """
     pipeline = TranscriptionPipeline()
 
     while True:
-        video_id, file_name = transcription_queue.get()  # blocks until work arrives
+        video_id, file_name = transcription_queue.get()
         try:
-            # ----------------------------------------------------------------
-            # Phase 1: resolve any futures that are already satisfied
-            # (covers the case where two identical URLs were queued back-to-back)
-            # ----------------------------------------------------------------
+            # ── Phase 1: resolve already-satisfied futures ──
+            print("Start Transcripting")
             with futures_lock:
                 still_pending = []
                 for fid, future in currently_processing_futures:
                     exist, has_content = check_exist_and_has_content(session, fid)
+                    print("In the damn loop")
                     if has_content:
-                        future.set_result(get_existing_transcript(session, fid))
+                        id, res = get_existing_transcript(session, fid)
+                        future.set_result(res)
                     else:
                         still_pending.append((fid, future))
                 currently_processing_futures[:] = still_pending
             print(currently_processing_futures)
-            # ----------------------------------------------------------------
-            # Phase 2: transcribe the current item
-            # ----------------------------------------------------------------
+
+            # ── Phase 2: transcribe ──
             result = pipeline.transcribe(file_name)
             update_transcript(session, video_id, result)
 
-            # ----------------------------------------------------------------
-            # Phase 3: resolve every future waiting on this video_id
-            # ----------------------------------------------------------------
+            # ── Phase 3: resolve waiters ──
             with futures_lock:
                 remaining = []
                 for fid, future in currently_processing_futures:
@@ -105,8 +97,7 @@ def transcription(session: Session):
                 currently_processing_futures[:] = remaining
 
         except Exception as exc:
-            # If transcription fails, surface the error to all waiters for
-            # this video so they are not blocked forever.
+            print(exc)
             with futures_lock:
                 remaining = []
                 for fid, future in currently_processing_futures:
@@ -115,8 +106,30 @@ def transcription(session: Session):
                     else:
                         remaining.append((fid, future))
                 currently_processing_futures[:] = remaining
-        os.remove(file_name)
 
+        finally:
+            # ── Memory / resource cleanup ──
+
+            # 1. Delete the wav file — always runs, even if transcription crashed
+            try:
+                os.remove(file_name)
+                print(f"[cleanup] Deleted {file_name}")
+            except FileNotFoundError:
+                pass
+
+            # 2. Expire SQLModel session cache so the next job sees fresh DB state
+            #    Without this, session holds stale ORM objects in memory indefinitely
+            session.expire_all()
+
+            # 3. Release the pipeline's GPU/CPU memory between jobs if supported
+            if hasattr(pipeline, 'release') and callable(pipeline.release):
+                pipeline.release()
+
+            # 4. Run Python's garbage collector to free any large objects immediately
+            #    (wav data, model outputs, etc.) rather than waiting for the next GC cycle
+            gc.collect()
+
+            print(f"[cleanup] Done for {video_id}")
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------

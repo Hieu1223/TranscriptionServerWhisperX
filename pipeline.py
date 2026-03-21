@@ -5,24 +5,14 @@ import os
 import subprocess
 from pathlib import Path
 
-# Prevent the 'libiomp5md.dll' kernel crash
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
 
 class TranscriptionPipeline:
     def __init__(
         self,
         model_size: str = "large-v3-turbo",
         device: str = "cuda",
-        compute_type: str = "int8",
+        compute_type: str = "float16",  # ✅ int8 causes CPU fallback on some CT2 builds
     ) -> None:
-        cuda_bin = r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\bin"
-        if os.path.exists(cuda_bin):
-            try:
-                os.add_dll_directory(cuda_bin)
-            except Exception:
-                pass
-
         self.device = device
         self.compute_type = compute_type
 
@@ -37,8 +27,10 @@ class TranscriptionPipeline:
         self.model_a = None
         self.metadata = None
         self.current_align_lang = None
+        print(f"Initializing WhisperX {model_size}... Done")
 
-    def _preprocess_audio(self, file_path: str) -> str:
+    @staticmethod  # ✅ was missing self, must be staticmethod
+    def _preprocess_audio(file_path: str) -> str:
         """Convert audio to mono 16kHz PCM WAV to prevent resampling drift."""
         out_path = str(Path(file_path).with_suffix(".converted.wav"))
         subprocess.run(
@@ -54,15 +46,18 @@ class TranscriptionPipeline:
         )
         return out_path
 
-    def transcribe(self, file_path: str, batch_size: int = 16) -> list[list[dict]]:
-        # Pre-convert to clean mono 16kHz WAV — eliminates timestamp drift
-        converted_path = self._preprocess_audio(file_path)
+    @staticmethod  # ✅ was missing self, must be staticmethod
+    def load_audio(file_path: str):
+        converted_path = TranscriptionPipeline._preprocess_audio(file_path)
         audio = whisperx.load_audio(converted_path)
-        language = "ja"
+        return audio, converted_path
 
-        # chunk_size=10 reduces VAD boundary errors on Japanese (no word spaces)
+    def transcribe_with_tensor(self, audio, batch_size: int = 16) -> list[list[dict]]:  # ✅ increased batch_size
+        language = "ja"
+        print("Transcribing starts")
         result = self.model.transcribe(audio, batch_size=batch_size, chunk_size=10)
 
+        print("Aligning")
         if self.model_a is None or self.current_align_lang != language:
             self.model_a, self.metadata = whisperx.load_align_model(
                 language_code=language, device=self.device
@@ -78,6 +73,8 @@ class TranscriptionPipeline:
             return_char_alignments=False,
         )
 
+        print("Align Done")
+
         all_lines = []
         for segment in aligned_result["segments"]:
             line_data = []
@@ -86,8 +83,6 @@ class TranscriptionPipeline:
             for w in words:
                 start = w.get("start")
                 end = w.get("end")
-
-                # Skip words with missing timestamps — they bleed into silence
                 if start is None or end is None:
                     continue
 
@@ -100,4 +95,23 @@ class TranscriptionPipeline:
             if line_data:
                 all_lines.append(line_data)
 
+        print("Transcribing ends")
+
+        del audio
+        del aligned_result
+        del result
+        gc.collect()
+
+        if self.device == "cuda" and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+
         return all_lines
+
+    def transcribe(self, file_path: str, batch_size: int = 32) -> list[list[dict]]:
+        audio, converted_path = TranscriptionPipeline.load_audio(file_path)  # ✅ fixed order (was reversed)
+        try:
+            result = self.transcribe_with_tensor(audio, batch_size)
+        finally:
+            os.remove(converted_path)  # ✅ always cleanup even if transcribe fails
+        return result

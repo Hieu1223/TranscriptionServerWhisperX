@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from schema import YoutubeTranscriptionResponse, TranscriptResponseV2
 from caching import create_db_and_tables, SessionDep,get_session,engine
-from job_system import *
+from multithread_transcribe import *
 import asyncio
 
 # ---------------------------------------------------------------------------
