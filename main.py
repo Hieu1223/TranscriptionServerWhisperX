@@ -1,13 +1,11 @@
 from contextlib import asynccontextmanager
-from typing import AsyncIterable
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from schema import YoutubeTranscriptionResponse, TranscriptResponseV2
-from caching import create_db_and_tables, SessionDep,get_session,engine
+from schema import YoutubeTranscriptionResponse
+from caching import create_db_and_tables, SessionDep,engine
 from multithread_transcribe import *
 import asyncio
 from dotenv import load_dotenv
