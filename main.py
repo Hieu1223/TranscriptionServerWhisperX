@@ -1,4 +1,5 @@
 
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -13,6 +14,9 @@ from schema import YoutubeTranscriptionResponse
 from caching import create_db_and_tables, SessionDep,engine
 from multithread_transcribe import *
 import asyncio
+
+import os
+os.makedirs("temp", exist_ok=True)
 # ---------------------------------------------------------------------------
 # Lifespan: replaces the deprecated @app.on_event("startup")
 # ---------------------------------------------------------------------------

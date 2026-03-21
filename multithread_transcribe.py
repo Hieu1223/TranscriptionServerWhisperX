@@ -169,25 +169,6 @@ def start_workers(session: Session):
 
 
 
-def start_workers(session: Session):
-    """Initialise and start both background worker threads."""
-    transcription_thread = Thread(
-        target=transcription,
-        args=(session,),
-        daemon=True,
-        name="transcription-worker",
-    )
-    download_thread = Thread(
-        target=download_from_youtube,
-        args=(session,),
-        daemon=True,
-        name="download-worker",
-    )
-    transcription_thread.start()
-    download_thread.start()
-    return download_thread, transcription_thread
-
-
 def transcribe(url: str) -> dict:
     """
     Submit a URL for transcription and block until the result is ready.
