@@ -1,17 +1,20 @@
 import yt_dlp
 
+import os
+import yt_dlp
+
 def download_from_url(path, url):
+    proxy = os.environ.get("HTTP_PROXY")  # or "HTTPS_PROXY"
+
     ydl_opts = {
         'format': 'bestaudio/best',
-        # --- ADD THIS LINE ---
-        'noplaylist': True, 
-        # ---------------------
+        'noplaylist': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'wav',
         }],
-        # Using path directly as the template
-        'outtmpl': f'{path}.%(ext)s'
+        'outtmpl': f'{path}.%(ext)s',
+        'proxy': proxy  # <-- use env variable here
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
